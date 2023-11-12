@@ -18,13 +18,69 @@ namespace MvcMovie.Controllers
         {
             _context = context;
         }
+        // GET: MoviesByQuery
+        public async Task<IActionResult> Index(string movieGenre, string searchString)
+        {
+            if (_context.Movie == null) {
+                return Problem("Entity set 'MvcMovieContext.Movie' is null.");
+            }
+            IQueryable<string> genreQuery = from m in _context.Movie orderby m.Genre select m.Genre;
+            var movies = from m in _context.Movie select m;
+            if (!String.IsNullOrEmpty(searchString)) {
+                movies = movies.Where(s=>s.Title!.Contains(searchString));
+            }
+            if (!String.IsNullOrEmpty(movieGenre)) {
+                movies = movies.Where(x => x.Genre == movieGenre);
+            }
+            var movieGenreVM = new MovieGenreViewModel {
+                Genres = new SelectList(await genreQuery.Distinct().ToListAsync()),
+                Movies = await movies.ToListAsync()
+            };
+            return View(movieGenreVM);
+        }
+        // GET: MoviesByQuery
+        public async Task<IActionResult> IndexTitle(string searchString)
+        {
+            if (_context.Movie == null) {
+                return Problem("Entity set 'MvcMovieContext.Movie' is null.");
+            }
+            var movies = from m in _context.Movie select m;
+            if (!String.IsNullOrEmpty(searchString)) {
+                movies = movies.Where(s=>s.Title!.Contains(searchString));
+            }
+            return View(await movies.ToListAsync());
+        }
 
         // GET: Movies
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> IndexTitleRoute(string id)
         {
-              return _context.Movie != null ? 
-                          View(await _context.Movie.ToListAsync()) :
-                          Problem("Entity set 'MvcMovieContext.Movie'  is null.");
+            if (_context.Movie == null) {
+                return Problem("Entity set 'MvcMovieContext.Movie' is null.");
+            }
+            var movies = from m in _context.Movie select m;
+            if (!String.IsNullOrEmpty(id)) {
+                movies = movies.Where(s=>s.Title!.Contains(id));
+            }
+            return View(await movies.ToListAsync());
+            //   return _context.Movie != null ? 
+            //               View(await _context.Movie.ToListAsync()) :
+            //               Problem("Entity set 'MvcMovieContext.Movie'  is null.");
+        }
+
+        // GET: MoviesByQuery
+        public async Task<IActionResult> IndexTitleQuery(string searchString)
+        {
+            if (_context.Movie == null) {
+                return Problem("Entity set 'MvcMovieContext.Movie' is null.");
+            }
+            var movies = from m in _context.Movie select m;
+            if (!String.IsNullOrEmpty(searchString)) {
+                movies = movies.Where(s=>s.Title!.Contains(searchString));
+            }
+            return View(await movies.ToListAsync());
+            //   return _context.Movie != null ? 
+            //               View(await _context.Movie.ToListAsync()) :
+            //               Problem("Entity set 'MvcMovieContext.Movie'  is null.");
         }
 
         // GET: Movies/Details/5
@@ -56,7 +112,7 @@ namespace MvcMovie.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Title,ReleaseDate,Genre,Price")] Movie movie)
+        public async Task<IActionResult> Create([Bind("Id,Title,ReleaseDate,Genre,Rating,Price")] Movie movie)
         {
             if (ModelState.IsValid)
             {
@@ -88,7 +144,7 @@ namespace MvcMovie.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,ReleaseDate,Genre,Price")] Movie movie)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,ReleaseDate,Genre,Rating,Price")] Movie movie)
         {
             if (id != movie.Id)
             {
