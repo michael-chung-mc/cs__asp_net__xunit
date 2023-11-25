@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using MvCMovie.Models;
 using MvcMovie.Data;
+using Microsoft.IdentityModel.Tokens;
 
 namespace MvcMovie.Controllers
 {
@@ -24,18 +25,24 @@ namespace MvcMovie.Controllers
             if (_context.Movie == null) {
                 return Problem("Entity set 'MvcMovieContext.Movie' is null.");
             }
+            Console.WriteLine("before genre query");
             IQueryable<string> genreQuery = from m in _context.Movie orderby m.Genre select m.Genre;
+            Console.WriteLine("before query");
             var movies = from m in _context.Movie select m;
+            Console.WriteLine("before string check");
             if (!String.IsNullOrEmpty(searchString)) {
                 movies = movies.Where(s=>s.Title!.Contains(searchString));
             }
             if (!String.IsNullOrEmpty(movieGenre)) {
                 movies = movies.Where(x => x.Genre == movieGenre);
             }
-            var movieGenreVM = new MovieGenreViewModel {
-                Genres = new SelectList(await genreQuery.Distinct().ToListAsync()),
-                Movies = await movies.ToListAsync()
-            };
+            Console.WriteLine("after string check");
+            var movieGenreVM = !genreQuery.IsNullOrEmpty<string>() && !movies.IsNullOrEmpty<Movie>() ? 
+                new MovieGenreViewModel {
+                    //Genres = new SelectList(await genreQuery.Distinct().ToListAsync()),
+                    Genres = new SelectList(await genreQuery.Distinct().ToListAsync()),
+                    Movies = await movies.ToListAsync()
+                } : new MovieGenreViewModel { Genres = null, Movies = null };
             return View(movieGenreVM);
         }
         // GET: MoviesByQuery
@@ -48,7 +55,8 @@ namespace MvcMovie.Controllers
             if (!String.IsNullOrEmpty(searchString)) {
                 movies = movies.Where(s=>s.Title!.Contains(searchString));
             }
-            return View(await movies.ToListAsync());
+            try { return View(await movies.ToListAsync()); }
+            catch { return View(); }
         }
 
         // GET: Movies
